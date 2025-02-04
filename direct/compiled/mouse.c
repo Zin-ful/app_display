@@ -8,6 +8,7 @@
 
 #define MOUSE_PATH "/dev/input/mice"
 
+uint32_t cache_color[5][5];
 int mouse_fd = -1;
 int mouse_pos_x;
 int mouse_pos_y;
@@ -26,13 +27,14 @@ int init_mouse() {
 void read_mouse() {
     unsigned char data[3];
     while (read(mouse_fd, data, sizeof(data)) > 0) {
-        erase_pixel(mouse_pos_x, mouse_pos_y);
+        erase_mouse(1, cache_color);
         int left = data[0] & 0x1;
         int right = data[0] & 0x2; //mouse states
         int middle = data[0] & 0x4;
         mouse_pos_x += (signed char)data[1];
         mouse_pos_y -= (signed char)data[2];
-        draw_pixel(mouse_pos_x, mouse_pos_y, 0xFFFFFF);
+        get_space(mouse_pos_x, mouse_pos_y, 1, cache_color);
+        draw_mouse(mouse_pos_x, mouse_pos_y, 1, 0xFFFFFF);
         usleep(20000);
         if (left == 1) {
             click(mouse_pos_x, mouse_pos_y, left);
