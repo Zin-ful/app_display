@@ -1,16 +1,19 @@
 priority:
 
-1st. make terminal emulator
+1st. make terminal emulator -not done due to:
+need to make bitmap for fonts
+need to map fonts to grid
+need to add/remove chars on keyevent
 
-2nd. fix mouse
+2nd. fix mouse -not done due to stupid bullshit
 
-3rd. figure out how to execute shit
+3rd. figure out how to execute shit -done
 
-4th. config.c && config.json
+4th. config.c && config.json -done
 
 5th. auto recognize keyboard event
 
-6th. integrate the file server (1.0)
+6th. integrate file server
 
 7th. app transition
 
@@ -24,10 +27,6 @@ because its a mouse updating quickly id rather not use a for loop though since i
 draw_highlight makes multiple calls to draw_pixel which is slow and can make boxes flash. this also overwrites anything were trying to highlight. is fixible, i am lazy
 
 printing text is impossible
-
-make struct for highlighted objects to allow the check and execution of applications
-
-create a way to map programs to screen coordinates
 
 make app transition (pixelate fade maybe) to allow time for the windower.c to close, clear screen to prevent the cmdline from showing, and load the emulator
 
