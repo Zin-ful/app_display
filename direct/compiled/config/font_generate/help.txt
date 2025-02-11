@@ -1,0 +1,9 @@
+this is currently not in use but it will be fixed in the future once i can sync up the values between files
+
+
+
+how it works:
+the fonts are 8x10 technically but the extra 2 bits in 10 are for padding so for all purposes its 8x8
+simply design the character and run the file.
+to prevent a weird look make sure the top and bottom of characters match for the entire alphabet
+for more detailed chars the 8x8 might be increased to 10x10 but probably not
