@@ -1,3 +1,6 @@
+the actual program is in /compile, these files do run but without the /config or /apps it will throw errors
+
+
 priority:
 
 1st. make terminal emulator -not done due to:
