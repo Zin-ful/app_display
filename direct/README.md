@@ -3,10 +3,11 @@ to recognize keyboard make sure to reference the correct event in keyboard.c use
 
 priority:
 
-1st. make terminal emulator -not done due to:
+1st. make terminal emulator -TECHNICALLY DONE BUt not done due to:
 need to make bitmap for fonts
 need to map fonts to grid
 need to add/remove chars on keyevent
+temporary terminal (bash interface/bash simulator) is currently in place instead cause i want to get a decent grade in class
 
 2nd. fix mouse -not done due to stupid bullshit
 
@@ -23,6 +24,10 @@ need to add/remove chars on keyevent
 
 
 issues:
+
+when changing to difference screen sizes the mouse wont go the full x:y of the screen. im not exactly sure why since the screen boundaries are set properly. seems to be a mouse issue and not a window issue
+
+because of the problem above you can only access certain cells for program execution. make sure to chmod 777 all apps or else youll run into a permission error
 
 when setting mouse size to larger than one pixel the get_space and erase_mouse fail and end up shifting the pixels. a fix for this could be using get_pixel_range (a for loop) and if the color value matches the background color we dont map it. 
 because its a mouse updating quickly id rather not use a for loop though since its heavy on cpu
