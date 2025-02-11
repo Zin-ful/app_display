@@ -1,9 +1,7 @@
-this is currently not in use but it will be fixed in the future once i can sync up the values between files
+use this font generator to customize the look of your font.
 
+it currently is set to whatever the GRID_ROL/COL_TEXT dimensions are and is called by such in the text_loader.c file
 
+the text loader is only responsible for loading this font into memory. the keyboard and windower handle events and drawing
 
-how it works:
-the fonts are 8x10 technically but the extra 2 bits in 10 are for padding so for all purposes its 8x8
-simply design the character and run the file.
-to prevent a weird look make sure the top and bottom of characters match for the entire alphabet
-for more detailed chars the 8x8 might be increased to 10x10 but probably not
+if you are writing a progam and want text displayed, make sure to extern declare the windower text related variables as they mark if a row is free to print on or not
