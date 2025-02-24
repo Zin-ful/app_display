@@ -15,11 +15,12 @@ main.o: main.c windower.c mouse.c keyboard.c text_loader.c
 keyboard.o: keyboard.c keyboard.h text_loader.c text_loader.h windower.c windower.h
 	   $(CC) $(CFLAGS) -c keyboard.c
 
-windower.o: windower.c windower.h main.c main.h
+windower.o: windower.c windower.h keyboard.c keyboard.h text_loader.c text_loader.h mouse.c mouse.h
 	   $(CC) $(CFLAGS) -c windower.c
 
 mouse.o: mouse.c mouse.h windower.c windower.h
 	   $(CC) $(CFLAGS) -c mouse.c
+
 text_loader.o: text_loader.c text_loader.h windower.c windower.h
 	   $(CC) $(CFLAGS) -c text_loader.c
 
