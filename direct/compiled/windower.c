@@ -7,6 +7,8 @@
 #include <sys/ioctl.h>
 #include <linux/fb.h>
 #include "windower.h"
+#include "mouse.h"
+#include "keyboard.h"
 #include <string.h>
 
 int fb_fd = -1;
@@ -14,25 +16,33 @@ void* framebuffer = NULL;
 struct fb_var_screeninfo vinfo;
 signed int screen_res_x;
 signed int screen_res_y; //to sync draw/erase/getcolor
-int cache_x, cache_y; //for draw and erase
-int draw_ready;
-int erase_ready = 1;
-int cell_width, cell_height;
-int text_cell_width, text_cell_height;
-#define GRID_ROW_TEXT 80;
-#define GRID_COL_TEXT 150;
-#define GRID_ROW_MAIN 10;
-#define GRID_COL_MAIN 20;
-#define GRID_ROW_ICON 50;
-#define GRID_COL_ICON 80;
+int cell_width, cell_height, text_cell_width, text_cell_height, cache_x, cache_y, erase_cache_x, erase_cache_y, cont_x, cont_y;
+int cont = 0;
+int disable_check_app_host = 0;
+#define GRID_ROW_TEXT 200
+#define GRID_COL_TEXT 60
+#define GRID_ROW_MAIN 10
+#define GRID_COL_MAIN 20
+#define GRID_ROW_ICON 50
+#define GRID_COL_ICON 80
 #define BLACK16 0x0000
 #define BLACK24 0x00
 #define BLACK32 0xFF000000
 #define WHITE32 0xFFFFFF
+#define MOUSE_SIZE 4
+
+uint32_t cursor[MOUSE_SIZE][MOUSE_SIZE] = {
+    {0xFFFFFF, 0xFFFFFF, 0xFFFFFF, 0xFFFFFF},
+    {0xFFFFFF, 0xFFFFFF, 0xFFFFFF, 0x000000},
+    {0xFFFFFF, 0xFFFFFF, 0x000000, 0x000000},
+    {0xFFFFFF, 0x000000, 0x000000, 0x000000},
+};
+
+uint32_t background_cache[MOUSE_SIZE][MOUSE_SIZE];
 
 int init_framebuffer() {
     //open fb0
-    fb_fd = open("/dev/fb0", O_RDWR); //opens fb as rw | change if framebuffer is in other location
+    fb_fd = open("/dev/fb0", O_RDWR);
     if (fb_fd == -1) {
         perror("failed to open framebuffer\n");
         return -1;
@@ -43,9 +53,6 @@ int init_framebuffer() {
         close(fb_fd);
         return -1;
     }
-    //printf("Framebuffer information: \n");
-    //printf("Resolution: %dx%d\n", vinfo.xres, vinfo.yres);
-    //printf("Color depth: %d bpp\n", vinfo.bits_per_pixel);
     screen_res_y = vinfo.yres;
     screen_res_x = vinfo.xres;
     cell_width = screen_res_x / GRID_ROW_MAIN;
@@ -92,13 +99,15 @@ void clear_screen() {
             fb_ptr[i] = BLACK32;
         }
     }
-    printf("/033[H/033[J");
 }
 void screen_event(int grid_pos_x, int grid_pos_y, int mouse_x, int mouse_y) { //the grid isnt defined here, its defined in mouse.c since the grid is just math
-    draw_highlight((grid_pos_x * cell_width), (grid_pos_y * cell_height), cell_width, cell_height, 0xFFFFFF);
-    //printf("cell %d,%d selected\n", grid_pos_x, grid_pos_y);
-    check_apps(grid_pos_x, grid_pos_y);
-
+    if (!disable_check_app_host) {
+        draw_highlight((grid_pos_x * cell_width), (grid_pos_y * cell_height), cell_width, cell_height, 0xFFFFFF);
+        check_apps(grid_pos_x, grid_pos_y);
+        if (cont == 1) {
+            draw_highlight((grid_pos_x * cell_width), (grid_pos_y * cell_height), cell_width, cell_height, 0x000000);
+        }
+    }
 }
 
 uint32_t get_pixel(int x, int y) {
@@ -117,22 +126,10 @@ uint32_t get_pixel(int x, int y) {
     }
 }
 
-uint32_t get_pixel_range(int x, int y, int size, uint32_t color_cache[5][5]) {
+uint32_t get_pixel_range(int size, uint32_t color_cache[10][10]) {
     for (int dy = 0; dy < size; dy++) {
         for (int dx = 0; dx < size; dx++) {
-            return color_cache[dy][dx] = get_pixel(x + dx - size / 2, y + dy - size / 2);
-        }
-    }
-}
-
-uint32_t get_space(int size, uint32_t color_cache[5][5]) {
-    int bpp = vinfo.bits_per_pixel / 8;
-    uint8_t* fb_ptr = (uint8_t*)framebuffer; //fb_ptr x,y diretly represents its pixel value (uint)
-    if (erase_ready == 0 && draw_ready == 1){
-        for (int dy = 0; dy < size; dy++) {
-            int index = ((cache_y + dy) * vinfo.xres_virtual + cache_x) * bpp;
-            //printf("getting color: %d:%d\n", cache_x, cache_y);
-            memcpy(&color_cache[dy][0], &fb_ptr[index], bpp);
+            color_cache[dy][dx] = get_pixel(erase_cache_x + dx, erase_cache_y + dy);
         }
     }
 }
@@ -141,8 +138,6 @@ void draw_pixel(int x, int y, uint32_t color) {
     if (x >= vinfo.xres || y >= vinfo.yres) {
         return;
     }
-    cache_x = x;
-    cache_y = y;
     int index = (y * vinfo.xres_virtual) + x;
     if (vinfo.bits_per_pixel == 16) {
         ((uint16_t*)framebuffer)[index] = (uint16_t)color;
@@ -150,12 +145,13 @@ void draw_pixel(int x, int y, uint32_t color) {
         uint8_t* fb_ptr = (uint8_t*)framebuffer;
         index *= 3;
         fb_ptr[index] = color & 0xFF; //red
-        fb_ptr[index + 1] = (color >> 8) & 0xFF; //green //for monitors with 24 bit depth that use 3 leds to represent a single pixel
+        fb_ptr[index + 1] = (color >> 8) & 0xFF; //green
         fb_ptr[index + 2] = (color >> 16) & 0xFF; //blue
     } else if (vinfo.bits_per_pixel == 32) {
         ((uint32_t*)framebuffer)[index] = color;
     }
 }
+
 
 void erase_pixel(int x, int y, uint32_t color) {
     if (x >= vinfo.xres || y >= vinfo.yres) {
@@ -175,38 +171,33 @@ void erase_pixel(int x, int y, uint32_t color) {
     }
 }
 
-void draw_mouse(int x, int y, int size, uint32_t color) {
+void draw_mouse(int x, int y) {
     if (x >= vinfo.xres || y >= vinfo.yres) {
         return;
     }
-    cache_x = x;
-    cache_y = y;
-    if (draw_ready == 1) {
-        erase_ready = 1;
-        draw_ready = 0;
-        int bpp = vinfo.bits_per_pixel / 8;
-        uint8_t* fb_ptr = (uint8_t*)framebuffer;
-        for (int dy = 0; dy < size; dy++) {
-            int index = ((y + dy) * vinfo.xres_virtual + x) * bpp;
-            //printf("drawing color: %d:%d\n", x, y);
-            memset(&fb_ptr[index], color, size * bpp);
+    erase_cache_x = x;
+    erase_cache_y = y;
+    for (int dy = 0; dy < MOUSE_SIZE; dy++) {
+        for (int dx = 0; dx < MOUSE_SIZE; dx++) {
+            background_cache[dy][dx] = get_pixel(x + dx, y + dy);
+        }
+    }
+    for (int dy = 0; dy < MOUSE_SIZE; dy++) {
+        for (int dx = 0; dx < MOUSE_SIZE; dx++) {
+            if (cursor[dy][dx] != 0x000000) {
+                draw_pixel(x + dx, y + dy, cursor[dy][dx]);
+            }
         }
     }
 }
 
-void erase_mouse(int size, uint32_t cache[5][5]) {
-    if (cache_x >= vinfo.xres || cache_y >= vinfo.yres) {
+void erase_mouse(int x, int y) {
+    if (erase_cache_x >= vinfo.xres || erase_cache_y >= vinfo.yres) {
         return;
     }
-    if (erase_ready == 1) {
-        erase_ready = 0;
-        draw_ready = 1;
-        int bpp = vinfo.bits_per_pixel / 8;
-        uint8_t* fb_ptr = (uint8_t*)framebuffer;
-        for (int dy = 0; dy < size; dy++) {
-            //printf("erasing color: %d:%d\n", cache_x, cache_y);
-            int index = ((cache_y + dy) * vinfo.xres_virtual + cache_x) * bpp;
-            memcpy(&fb_ptr[index], &cache[dy][0], size * bpp);
+    for (int dy = 0; dy < MOUSE_SIZE; dy++) {
+        for (int dx = 0; dx < MOUSE_SIZE; dx++) {
+            draw_pixel(x + dx, y + dy, background_cache[dy][dx]);
         }
     }
 }
@@ -238,4 +229,55 @@ void draw_highlight(int x, int y, int w, int h, uint32_t color) {
         draw_pixel(x + w- 1, pos_y, color);
     }
 }
+
+void check_apps(int x, int y) {
+
+    FILE *file = fopen("config/apps.txt", "r");
+    int app_x, app_y;
+    if (!file) {
+        perror("file not found, make apps.txt in config folder\n");
+    }
+    char line[1024];
+    while (fgets(line, sizeof(line), file) != NULL) {
+        char *name = strtok(line, ",");
+        char *executable = strtok(NULL, ",");
+        char *xy_pos = strtok(NULL,"\n");
+        if (name && executable && xy_pos) {
+            sscanf(xy_pos, "%d:%d", &app_x, &app_y);
+            if (app_x == x && app_y == y) {
+                if (cont == 1 && app_x == cont_x && app_y == cont_y) {
+                    cont = 0;
+                    cont_y = NULL;
+                    cont_x = NULL;
+                    char path[256];
+                    ssize_t len = readlink("/proc/self/exe", path, sizeof(path) - 1);
+                    path[len] = '\0';
+                    char *dir = dirname(path);
+                    strcat(dir, "/");
+                    strcat(dir, executable);
+                    clear_screen();
+                    close_mouse();
+                    close_keys();
+                    close_framebuffer();
+                    system(dir);
+                    init_framebuffer();
+                    init_keys();
+                    init_mouse();
+                    clear_screen();
+                    break;
+                } else {
+                    if (cont < 2) {
+                        cont++;
+                    }
+                    cont_x = app_x;
+                    cont_y = app_y;
+                    break;
+                }
+            }
+        }
+    }
+    fclose(file);
+}
+
+
 
