@@ -10,6 +10,7 @@
 #include "mouse.h"
 #include "keyboard.h"
 #include <string.h>
+#include <signal.h>
 
 int fb_fd = -1;
 void* framebuffer = NULL;
@@ -19,12 +20,15 @@ signed int screen_res_y; //to sync draw/erase/getcolor
 int cell_width, cell_height, text_cell_width, text_cell_height, cache_x, cache_y, erase_cache_x, erase_cache_y, cont_x, cont_y;
 int cont = 0;
 int disable_check_app_host = 0;
+int disable_exit_button = 0;
+int disable_top_bar = 0;
+
 #define GRID_ROW_TEXT 200
 #define GRID_COL_TEXT 60
 #define GRID_ROW_MAIN 10
 #define GRID_COL_MAIN 20
-#define GRID_ROW_ICON 50
-#define GRID_COL_ICON 80
+#define GRID_ROW_ICON 0
+#define GRID_COL_ICON 0
 #define BLACK16 0x0000
 #define BLACK24 0x00
 #define BLACK32 0xFF000000
@@ -106,6 +110,11 @@ void screen_event(int grid_pos_x, int grid_pos_y, int mouse_x, int mouse_y) { //
         check_apps(grid_pos_x, grid_pos_y);
         if (cont == 1) {
             draw_highlight((grid_pos_x * cell_width), (grid_pos_y * cell_height), cell_width, cell_height, 0x000000);
+        }
+    }
+    if (!disable_exit_button) {
+        if (mouse_x <= vinfo.xres_virtual && mouse_x >= vinfo.xres_virtual - 8 && mouse_y >= 0 && mouse_y <= vinfo.yres_virtual + 8) {
+            raise(SIGINT);
         }
     }
 }
@@ -227,6 +236,25 @@ void draw_highlight(int x, int y, int w, int h, uint32_t color) {
     for (int pos_y = y; pos_y < y + h; pos_y++) {
         draw_pixel(x, pos_y, color);
         draw_pixel(x + w- 1, pos_y, color);
+    }
+}
+
+void draw_top_bar(int x, int y, int w, int h, uint32_t color) {
+    if (!disable_top_bar) {
+        unsigned char shape[8] = {0x42, 0x24, 0x18, 0x18, 0x18, 0x24, 0x42, 0x00};
+        draw_rect(0, 0, 1920, 8, color);
+        draw_char(1912, 0, 1, 1, shape, 0x000000);
+        draw_char(1912, 1, 1, 1, shape, 0x000000);
+    }
+}
+
+void init_apps() {
+    FILE *file = fopen("config/apps.txt", "r");
+    char line[256];
+    while (fgets(line, sizeof(line), file) != NULL) {
+        char *name = strtok(line, ",");
+       //printf("%s\n", name);
+        printout(cell_width, cell_height, name, 0xFFFFFF);
     }
 }
 

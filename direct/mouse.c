@@ -15,8 +15,6 @@ int mouse_pos_x, mouse_pos_y, cache_mouse_x, cache_mouse_y, left_click, right_cl
 int disable_click_host = 0;
 
 /*
-
-to stop clicking, set 
 */
 
 

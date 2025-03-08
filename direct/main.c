@@ -77,7 +77,7 @@ int main() {
     pthread_create(&keys_thread, NULL, keys_task, NULL);
     pthread_create(&mouse_thread, NULL, mouse_task, NULL);
     pthread_create(&frames_thread, NULL, frames_task, NULL);
-    //draw_rect(500, 500, 500, 500, 0xFFFFFF);
+    draw_top_bar(2,2,2,2,0xFFFFFF);
     while (running) {
         usleep(20000); //2nd buffer for cpu
     }
