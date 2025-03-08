@@ -10,6 +10,8 @@ extern int cell_height;
 extern int text_cell_width;
 extern int text_cell_height;
 extern int disable_check_app_host;
+extern int disable_exit_button;
+extern int disable_top_bar;
 
 int init_framebuffer();
 void close_framebuffer();
@@ -24,4 +26,7 @@ void erase_mouse(int x, int y);
 void draw_rect(int x, int y, int w, int h, uint32_t color);
 void erase_rect(int x, int y, int w, int h);
 void draw_highlight(int x, int y, int w, int h, uint32_t color);
+void init_apps();
+void check_apps(int x, int y);
+void draw_top_bar(int x, int y, int w, int h, uint32_t color);
 #endif

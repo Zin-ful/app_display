@@ -4,6 +4,7 @@
 #include "windower.h"
 #include <linux/input.h>
 int cursor_x, cursor_y;
+cursor_y = 8; //cause of top bar
 unsigned char all_fonts[26][8] = {
     //a
     {0x18, 0x24, 0x42, 0x7E, 0x42, 0x42, 0x42, 0x00},
@@ -72,8 +73,6 @@ const char *keycode_to_char[256] = {
 [KEY_M] = "M", [KEY_N] = "N", [KEY_O] = "O", [KEY_P] = "P", [KEY_Q] = "Q", [KEY_R] = "R",
 [KEY_S] = "S", [KEY_T] = "T", [KEY_U] = "U", [KEY_V] = "V", [KEY_W] = "W", [KEY_X] = "X",
 [KEY_Y] = "Y", [KEY_Z] = "Z", [KEY_SPACE] = " ", [KEY_BACKSPACE] = "\b", [KEY_ENTER] = "\n",
-
-
 };
 
 void draw_char(int col, int row, int size_x, int size_y, unsigned char *font_bitmap, unsigned int color) { //col and row are swapped to change the orientation of printing. idk why its just fucked
@@ -104,7 +103,7 @@ void print(int cell_width, int cell_height, int keycode, unsigned int color) {
     } else if (*keybit == " ") {
         bitmap = space_bitmap;
     } else if (keycode == KEY_BACKSPACE) {
-        if (cursor_x <= 0 && cursor_y <= 0) return;
+        if (cursor_x <= 0 && cursor_y <= 8) return;
         bitmap = backspace_bitmap;
         color = 0x000000;
         if (cursor_x <= 0) {

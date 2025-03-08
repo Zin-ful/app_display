@@ -3,7 +3,7 @@
 
 #include <sys/time.h>
 
-extern int allow_typing;
+extern int disable_typing;
 extern int input_ready;
 extern int recent_key_pressed;
 
@@ -20,5 +20,6 @@ void read_keys();
 void read_inp();
 char* pass_inp();
 int init_keys();
+char* get_char(int symbol);
 void close_keys();
 #endif
