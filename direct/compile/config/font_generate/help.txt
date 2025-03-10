@@ -1,0 +1,7 @@
+use this font generator to customize the look of your font.
+
+it currently is set to whatever the GRID_ROL/COL_TEXT dimensions are and is called by such in the text_loader.c file
+
+the text loader is only responsible for loading this font into memory. the keyboard and windower handle events and drawing
+
+if you are writing a progam and want text displayed, make sure to extern declare the windower text related variables as they mark if a row is free to print on or not

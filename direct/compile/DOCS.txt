@@ -1,0 +1,188 @@
+
+SUMMARY:
+
+The fuction of this application is to allow the user to interact with applications (custom usually) without needing to install xserver or a full graphical enviorment.
+Creating this was motivated by graphical desktops being overbloated and i also hate windows.
+
+SYSTEM USE STATS (estimate):
+
+hardware: Raspi 0W | 2.4gHz keyboard/mouse combo
+1.3% load on CPU with < 16mb cache and no GPU
+? < KB of ram taken up, probably somewhere around 2k bytes
+0.00002% power draw increase over a 10hr period (takes about 115 hours to deplete 40,000mAh roughly draining 347 mAh per hour/1.7 watt hours)
+
+see header files for function args
+
+BUGS:
+
+improper color on big-endian systems
+improper mouse border sizing on debian, arch, and ubuntu (leads to segfault)
+various performance issues
+various complation warnings
+get_char does not return ANY results for unknown reasons
+system is CPU heavy due to mouse updates and drawing (will worsen with scale, no layers)
+a lack of customization for thirdpaty apps 
+a lack of design standard (work in progress)
+if you click randomly (only sometimes, is slightly uncommon), it will bug out and not let you execute (maybe the double click tracking somehow exeeds its proper value range without being reset)
+cells are not sized with borders in mind
+apps titles position is not matched to the grid position is config/apps.txt
+
+TO ADD:
+streamline font creation
+streamline icon creation
+buffer screen into memory for overlays
+use math to predefine screen positions (middle, midleft, top, top middle, etc) to make app creation easier
+to give the ability to use non-native apps, make an emulator *window* to allow the quick exit and shutdown of processes by leaving room for overlays and top bar
+dynamically scroll up & down
+add a seperate cursor for printout
+
+APPS TO MAKE:
+paint - in progress
+notes
+IDE
+video player
+audio player
+terminal emulator
+file browser
+web browser
+program decompiler
+network routing
+DNS
+device ID system
+RFID
+
+CORE:
+
+assume all cores are included within eachother during compile
+x/y is postion, w/h is size, or if *_size var is passed then the size is predefined unless statically changed
+
+WINDOWER:
+
+#True/False sets#
+
+disable_check_app_host - this disables the function that checks for apps on the home screen, which also disables box highlighting and app execution
+disable_exit_button - disables the exit button at the top right of the screen seperate the top bar
+disable_top_bar - disables the top bar seperate from the exit button
+disable_right/bottom_bar - does what it says
+disabe_left_bar - disables the left bar seperate from possible icons
+disable_draw_icon - disables icons seperate from left bar
+disable_center_exit - disables the exit button being center top
+
+#Functions#
+
+init_framebuffer - loads fb0 into memory and sets parameters
+
+close_frammebuffer - unloads fb0 from mem
+
+clear_screen - writes the screen directly with 0x000000
+
+screen_event - checks for mouse clicks if disable_check_app_host is false, draws a predefined highlight size, and will also check if your mouse click was within the exit buttons range
+
+get_pixel - gets the pixel color at that position (DEPRECIATED)
+
+get_pixel_range - gets a square range of pixel values (DEPRECIATED)
+
+draw_pixel - writes pixel directly to fb0
+
+erase_pixel - same as draw but in only black
+
+draw_mouse - (mouse.c) gets the current pixels *before* mouse draw, draws a predefined bitmap at the current position of the mouse
+
+erase_mouse - (mouse.c), following the draw action it uses the cached color(s) from draw mouse and overwrites its position
+
+draw_rect - what do you think? uses a for-loop of draw_pixel
+
+erase_rect - same but black
+
+draw_highlight - draws a highlight by skipping over the middle, meaning it doesnt draw so you can draw inside of it just not on the edges
+
+init_apps - opens config/apps.txt and gets the name of each application filling a grid cell with given name
+
+check_apps - on screen_event this will open config/apps.txt and compare the cell position to the position defined in apps.txt . if the comparison and double-click (sometimes buggy) are true, it will get the current PID
+             location in the file system, use the path from apps.txt to combine the PID path and app path to execute it using system();
+
+draw_top_bar - draws the top border for application interaction, can be used for apps needing a top border for exit functions
+
+draw_right/bottom_bar - draws the left/right borders
+
+draw_left_bar - draws left border and icons if enabled
+
+draw_window - takes parameters for all bar draws and will draw a window based off of 8 (as of march 2025) presets to streamline app production. can also animate transitions to a window when its drawn (not added as of 2025)
+
+
+
+#External Parameters#
+screen_res_x/y - screen resolution gotten from vinfo.virtual_res_x & y
+cell_width/height - the resulting size of the screen resolution divided by a defined grid size labled GRID_*_MAIN
+text_cell_width/height - same as above but this defines the default display size of the font
+border_state - a number (0-3) that represents how many borders are active
+border_1/2/3/4_thickness - gets the thicnkess of the border so text_loader can correctly offset drawing text
+
+
+MOUSE:
+
+#True/False Sets#
+
+disable_click_host - disables the click function
+
+#Functions#
+
+init_mouse - loads mouse and sets it center screen
+
+read_mouse - captures mouse data (position, click state)
+
+close_mouse - unloads mouse
+
+click - passes click to screen event along with the current cell position. The cell positions are not predifined but instead is decided by math via grid sizing
+
+#External Parameters#
+
+mouse_pos_x/y - tracks mouse position for other applications
+left/right/middle_click - tracks the state of the mouse
+
+KEYBOARD:
+
+#True/False Sets#
+
+disable_typing - disables printing text, not keyboard input capture
+
+#Functions#
+
+init_keys - loads keyboard event info (struct in keyboard.h)
+
+read_keys - reads keyboard input *event* and passes it into print() which if enabled will print text on the screen
+
+read_inp - reads stdin until null termination and calls pass_inp()
+
+pass_inp - returns the user input (for other applications)
+
+get_char - converts a keycode to a char cause for some reason text_loader wont (NO WORKY)
+
+close_keys - closes capture and keys event
+
+#External Parameters#
+
+
+TEXT_LOADER:
+
+#True/False Sets#
+
+none
+
+#Functions#
+
+draw_char - uses draw_pixel and loops through the inputted chars bitmap to draw the character to size
+
+print - this takes the live keyboard input and converts it to bitmap to pass into draw_char. tracks cursor position, handles space and backspace
+
+printout - takes predefined input and prints it out on screen (basically printf but not stupid)
+
+#External Parameters#
+
+cursor_x/y - typing cursor position, not really for information but so you can set it in other applications
+
+
+PRESET:
+#True/False Sets#
+#Functions#
+#External Parameters#

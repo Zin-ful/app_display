@@ -1,0 +1,5 @@
+TERMINAL,apps/terminal/terminal,0:0
+CALCULATOR,apps/calculator/calc,0:1
+HTOP,apps/htop/htop,0:3
+TOP,apps/topapp/top,0:4
+PAINT,apps/paint/paint,0:5
