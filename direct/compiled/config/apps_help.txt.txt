@@ -1,4 +1,0 @@
-to import apps you have to follow the format inside of the apps file
-make sure whatever app your trying to use is inside the apps folder
-theres no support in loading anything outside of /apps although you can nest folders inside of it
-as long as you properly set the path to the executable

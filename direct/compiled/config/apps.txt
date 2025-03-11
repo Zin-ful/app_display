@@ -1,6 +1,0 @@
-termial,apps/terminal/terminal,0:0
-calculator,apps/calculator/calc,0:1
-test,apps/test/test,0:2
-htop,apps/htop/htop,0:3
-top,apps/topapp/top,0:4
-paint,apps/paint/paint,0:5

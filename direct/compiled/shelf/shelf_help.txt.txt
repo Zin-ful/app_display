@@ -1,4 +1,0 @@
-everything in here is code that was attempted to be used but failed due to several reasons
-if you want to use this code you will have to adjust all of the other files to compensate
-this code is archived for learning purposes but otherwise will never be implemented
-make sure not to accendentally replace text loader
